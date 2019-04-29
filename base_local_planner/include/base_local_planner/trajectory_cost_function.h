@@ -49,6 +49,13 @@ namespace base_local_planner {
  * The prepare method is called before each batch run, and then for each
  * trajectory of the sampling set, score_trajectory may be called.
  */
+  /*
+  *提供了一个轨迹的代价的接口， scroeTrajectory()函数
+  *每次采样运行期间。一系列的轨迹将会被该函数评价打分
+  *在一系列的轨迹运行之前会调用准备方法，每一个采样频率设置的时候，scoretrajectory 会被调用
+  *
+  *
+  */
 class TrajectoryCostFunction {
 public:
 
