@@ -80,6 +80,9 @@ namespace move_base {
    * @class MoveBase
    * @brief A class that uses the actionlib::ActionServer interface that moves the robot base to a goal location.
    */
+  /**
+  *使用actionlib：：actionServer接口来控制机器人底座移动到目标位置
+  **/
   class MoveBase {
     public:
       /**
@@ -100,6 +103,12 @@ namespace move_base {
        * @param global_plan A reference to the global plan being used
        * @return True if processing of the goal is done, false otherwise
        */
+    /**
+    *执行控制循环
+    *goal：目标位置
+    *global——plan：使用的全局规划
+    如果到达目标位置返回true，不然返回false
+    */
       bool executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
     private:
