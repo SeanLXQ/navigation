@@ -553,6 +553,13 @@ namespace move_base {
     planner_cond_.notify_one();
   }
 
+  /**
+  *planThread用到了一个condition variable---planner_cond_实现特定频率唤醒线程，
+  *同时有个bool变量runPlanner_控制这个线程是否被执行：如果runPlanner_ == false，
+  *即使线程被唤醒也会在planner_cond_.wait(lock)这个地方sleep。当整个线程允许往下执行的时候，
+  *线程会调用makePlan来真正干活，之后将状态机设定为CONTROLLING, 这会让executeCb这条线里运行不同的支线。
+  *当然，如果makePlan没有办法给出规划，说明小车被卡住了，状态机会被设定为CLEARING。
+  */
   void MoveBase::planThread(){
     ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
     ros::NodeHandle n;
@@ -635,6 +642,12 @@ namespace move_base {
     }
   }
 
+  /**
+  *在收到目标后，executeCb就会被激活。可以看到有接近100行在处理收到数据的一些琐事，
+  *不管目标是否被抢占(action的特点)还是啥，最后实现的效果就是将目标传给executeCycle处理，
+  *将run_planner_设定为true，然后planThread会开始不断全局规划。注意这里不是规划一次就完了，
+  *因为除非出问题或者完成目标，run_planner_不会被设定会false。
+  */
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
