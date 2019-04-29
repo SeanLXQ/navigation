@@ -46,6 +46,11 @@ namespace base_local_planner {
  * @class TrajectorySampleGenerator
  * @brief Provides an interface for navigation trajectory generators
  */
+  /*
+  *提供了一个导航轨迹产生接口
+  *nextTrajectory用来遍历所有的轨迹
+  *
+  */
 class TrajectorySampleGenerator {
 public:
 
@@ -56,6 +61,7 @@ public:
 
   /**
    * Whether this generator can create more trajectories
+   *能不能继续/更多的产生轨迹
    */
   virtual bool nextTrajectory(Trajectory &traj) = 0;
 
