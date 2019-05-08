@@ -58,6 +58,9 @@ namespace nav_core {
       /**
        * @brief   Runs the RecoveryBehavior
        */
+       /*
+       *小车卡住的情况下如何运动回复到正常的导航
+	  */
       virtual void runBehavior() = 0;
 
       /**

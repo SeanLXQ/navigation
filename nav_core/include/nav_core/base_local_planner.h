@@ -54,6 +54,9 @@ namespace nav_core {
        * @param cmd_vel Will be filled with the velocity command to be passed to the robot base
        * @return True if a valid velocity command was found, false otherwise
        */
+       /*
+       *计算局部地图下一步的控制指令
+	  */
       virtual bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel) = 0;
 
       /**
