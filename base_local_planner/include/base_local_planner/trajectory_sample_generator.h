@@ -45,12 +45,8 @@ namespace base_local_planner {
 /**
  * @class TrajectorySampleGenerator
  * @brief Provides an interface for navigation trajectory generators
+ *¹ì¼£µ¼º½Éú³ÉÆ÷Ìá¹©½Ó¿Ú
  */
-  /*
-  *æä¾›äº†ä¸€ä¸ªå¯¼èˆªè½¨è¿¹äº§ç”Ÿæ¥å£
-  *nextTrajectoryç”¨æ¥éå†æ‰€æœ‰çš„è½¨è¿¹
-  *
-  */
 class TrajectorySampleGenerator {
 public:
 
@@ -61,7 +57,7 @@ public:
 
   /**
    * Whether this generator can create more trajectories
-   *èƒ½ä¸èƒ½ç»§ç»­/æ›´å¤šçš„äº§ç”Ÿè½¨è¿¹
+   *ÓÃÀ´±éÀúËùÓĞµÄ¹ì¼£
    */
   virtual bool nextTrajectory(Trajectory &traj) = 0;
 

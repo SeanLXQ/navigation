@@ -45,10 +45,8 @@ namespace base_local_planner {
 /**
  * @class TrajectorySearch
  * @brief Interface for modules finding a trajectory to use for navigation commands next
+ * 
  */
-  /*
-  *鐢ㄤ簬鏌ユ壘涓嬩竴涓鑸建杩圭殑妯″潡鍑犲彛
-  */
 class TrajectorySearch {
 public:
   /**
@@ -59,9 +57,9 @@ public:
    * @param traj The container to write the result to
    * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
    */
-  /*
-  *鐢ㄦ潵鎵惧埌涓�涓渶濂界殑杞ㄨ抗
-  */
+   /*
+   *找到最好的轨迹
+   */
   virtual bool findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored) = 0;
 
   virtual ~TrajectorySearch() {}

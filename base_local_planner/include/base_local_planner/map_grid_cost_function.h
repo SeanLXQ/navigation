@@ -70,6 +70,12 @@ enum CostAggregationType { Last, Sum, Product};
  * @param is_local_goal_function, scores for local goal rather than whole path
  * @param aggregationType how to combine costs along trajectory
  */
+ /*
+*MapGridCostFunction用来评估局部规划的轨迹距离全局规划轨迹的距离
+*它维护了一个base_local_planner::MapGrid map_,MapGrid是一系列MapCell,而MapCell包含了一个
+*int target dist，也就是说，MapGridCostFunction建立后随时知道地图上一个点到全局规划轨迹的距离，
+*或者是到目标的距离。
+*/
 class MapGridCostFunction: public base_local_planner::TrajectoryCostFunction {
 public:
   MapGridCostFunction(costmap_2d::Costmap2D* costmap,

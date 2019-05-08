@@ -48,14 +48,11 @@ namespace base_local_planner {
  * During each sampling run, a batch of many trajectories will be scored using such a cost function.
  * The prepare method is called before each batch run, and then for each
  * trajectory of the sampling set, score_trajectory may be called.
+ *Ìá¹©¹ì¼£µÄ½Ó¿Ú
+ *ÔÚÃ¿´Î²ÉÑùÔËĞĞÆÚ¼ä£¬½«Ê¹ÓÃÕâÑùµÄ³É±¾º¯Êı¶ÔÒ»ÅúĞí¶à¹ì¼£½øĞĞÆÀ·Ö
+ *ÔÚÃ¿´ÎÅú´¦ÀíÔËĞĞÖ®Ç°µ÷ÓÃprepare·½·¨
+ *¶ÔÓÚÒ»Åú²ÉÑù¹ì¼££¬score trajectory »á±»µ÷ÓÃ
  */
-  /*
-  *æä¾›äº†ä¸€ä¸ªè½¨è¿¹çš„ä»£ä»·çš„æ¥å£ï¼Œ scroeTrajectory()å‡½æ•°
-  *æ¯æ¬¡é‡‡æ ·è¿è¡ŒæœŸé—´ã€‚ä¸€ç³»åˆ—çš„è½¨è¿¹å°†ä¼šè¢«è¯¥å‡½æ•°è¯„ä»·æ‰“åˆ†
-  *åœ¨ä¸€ç³»åˆ—çš„è½¨è¿¹è¿è¡Œä¹‹å‰ä¼šè°ƒç”¨å‡†å¤‡æ–¹æ³•ï¼Œæ¯ä¸€ä¸ªé‡‡æ ·é¢‘ç‡è®¾ç½®çš„æ—¶å€™ï¼Œscoretrajectory ä¼šè¢«è°ƒç”¨
-  *
-  *
-  */
 class TrajectoryCostFunction {
 public:
 
@@ -68,6 +65,7 @@ public:
 
   /**
    * return a score for trajectory traj
+   *×ß¹ıÒ»¸ö¹ì¼£ĞèÒª¸¶³öµÄ´ú¼Û
    */
   virtual double scoreTrajectory(Trajectory &traj) = 0;
 

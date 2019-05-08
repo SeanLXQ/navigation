@@ -49,6 +49,9 @@ namespace base_local_planner {
  * class ObstacleCostFunction
  * @brief Uses costmap 2d to assign negative costs if robot footprint
  * is in obstacle on any point of the trajectory.
+ *计算小车在costmap上行走的代价，看看是否撞到障碍
+ *用到了world model接口来检测底座是不是撞到障碍物
+ *obstaclecost function 选用了costmapmodel 作为具体实现，改为其它的修改这行
  */
 class ObstacleCostFunction : public TrajectoryCostFunction {
 

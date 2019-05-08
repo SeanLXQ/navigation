@@ -90,6 +90,8 @@ public:
    *
    * @param traj The container to write the result to
    * @param all_explored pass NULL or a container to collect all trajectories for debugging (has a penalty)
+   *打分，找到最好的轨迹
+   *产生一系列的轨迹，用costfunction打分。轨迹生成器是一个list，dwa local planner放进去一个，cost function放进去6个
    */
   bool findBestTrajectory(Trajectory& traj, std::vector<Trajectory>* all_explored = 0);
 

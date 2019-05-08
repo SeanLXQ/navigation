@@ -71,6 +71,7 @@ private:
    * prevent the robot from oscillating
    * @param  t The selected trajectory
    * @return True if a flag was set, false otherwise
+   *检查小车是否有摆动
    */
   bool setOscillationFlags(base_local_planner::Trajectory* t, double min_vel_trans);
 
