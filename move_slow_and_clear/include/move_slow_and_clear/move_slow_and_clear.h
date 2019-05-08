@@ -43,6 +43,12 @@
 #include <boost/thread.hpp>
 #include <dynamic_reconfigure/Reconfigure.h>
 
+/*
+*清理costmap然后什么都不管，按照前进速度和转交速度走。
+*根据制定的距离，先清除全局和局部的costmap一圈的obstacle layer的障碍，然后直接发指令实现
+*由于只清除了obstacle layer，其实static layer的障碍还在，清不清除跟发指令关系不大，
+*该撞还是会撞上的。
+*/
 namespace move_slow_and_clear 
 {
   class MoveSlowAndClear : public nav_core::RecoveryBehavior
