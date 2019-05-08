@@ -59,6 +59,12 @@
 #include <dynamic_reconfigure/server.h>
 #include "move_base/MoveBaseConfig.h"
 
+/*
+*move baseÊÇÕû¸öµ¼º½°üµÄ×îÉÏ²ã£¬È»ºóÓÃsimple action server½ÓÊÜÄ¿±ê²¢Íê³Éµ¼º½
+*
+*ÊÕµ½Ä¿±êºóµ÷ÓÃexecuteCb, Ò»¸öÊÇ¿ªÒ»¸öÏß³ÌplanThread²»¶ÏµØÅÜÈ«¾Ö¹æ»®Æ÷
+*³ÌĞòµÄ×´Ì¬»ú¸úrecoveryBeheviorsµÄÂß¼­
+*/
 namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
@@ -80,9 +86,6 @@ namespace move_base {
    * @class MoveBase
    * @brief A class that uses the actionlib::ActionServer interface that moves the robot base to a goal location.
    */
-  /**
-  *ä½¿ç”¨actionlibï¼šï¼šactionServeræ¥å£æ¥æ§åˆ¶æœºå™¨äººåº•åº§ç§»åŠ¨åˆ°ç›®æ ‡ä½ç½®
-  **/
   class MoveBase {
     public:
       /**
@@ -103,12 +106,6 @@ namespace move_base {
        * @param global_plan A reference to the global plan being used
        * @return True if processing of the goal is done, false otherwise
        */
-    /**
-    *æ‰§è¡Œæ§åˆ¶å¾ªç¯
-    *goalï¼šç›®æ ‡ä½ç½®
-    *globalâ€”â€”planï¼šä½¿ç”¨çš„å…¨å±€è§„åˆ’
-    å¦‚æœåˆ°è¾¾ç›®æ ‡ä½ç½®è¿”å›trueï¼Œä¸ç„¶è¿”å›false
-    */
       bool executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
     private:
