@@ -56,18 +56,22 @@ typedef double (*pf_sensor_model_fn_t) (void *sensor_data,
 
 
 // Information for a single sample
+//采样点
 typedef struct
 {
   // Pose represented by this sample
   pf_vector_t pose;
 
   // Weight for this pose
+  //权重
   double weight;
   
 } pf_sample_t;
 
 
 // Information for a cluster of samples
+//一个集群，就是把pose视为三维点，27方格内挨着的点都算是一个集群
+//kdtree中有函数计算这个
 typedef struct
 {
   // Number of samples
@@ -81,12 +85,15 @@ typedef struct
   pf_matrix_t cov;
 
   // Workspace
+  //这个也是集群的统计信息，角度的一种方差
+  //在pf_cluster_stats中有计算
   double m[4], c[2][2];
   
 } pf_cluster_t;
 
 
 // Information for a set of samples
+//多个粒子的集合
 typedef struct _pf_sample_set_t
 {
   // The samples
@@ -103,11 +110,12 @@ typedef struct _pf_sample_set_t
   // Filter statistics
   pf_vector_t mean;
   pf_matrix_t cov;
-  int converged; 
+  int converged; //收敛，简单来说就是粒子都跑一块了
 } pf_sample_set_t;
 
 
 // Information for an entire filter
+//整个滤波器的数据结构
 typedef struct _pf_t
 {
   // This min and max number of samples

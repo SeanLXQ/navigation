@@ -37,22 +37,28 @@
 typedef struct pf_kdtree_node
 {
   // Depth in the tree
+  //是叶子吗--0，1   叶子的的深度
   int leaf, depth;
 
   // Pivot dimension and value
+  //比较哪一维(0 1 2)?比较值选的是平均值
   int pivot_dim;
   double pivot_value;
 
   // The key for this node
+  //pose，等比例放大，存成int
   int key[3];
 
   // The value for this node
+  //权重weight， pose看到的地图符合观测数据就大
   double value;
 
   // The cluster label (leaf nodes)
+  //想象pose为一个三维的点，挨着的pose就是一个集群
   int cluster;
 
   // Child nodes
+  //tree的基本概念
   struct pf_kdtree_node *children[2];
 
 } pf_kdtree_node_t;
@@ -62,16 +68,20 @@ typedef struct pf_kdtree_node
 typedef struct
 {
   // Cell size
+  //就是放大pose的比例，默认是0.5 0.5 pi/180*10, 除一下就放大了
   double size[3];
 
   // The root node of the tree
+  //根节点
   pf_kdtree_node_t *root;
 
   // The number of nodes in the tree
   int node_count, node_max_count;
+  //kdtree在一开始建立的时候会malloc个内存块存node， nodes指向开头
   pf_kdtree_node_t *nodes;
 
   // The number of leaf nodes in the tree
+  //叶子数量
   int leaf_count;
 
 } pf_kdtree_t;
@@ -87,6 +97,7 @@ extern void pf_kdtree_free(pf_kdtree_t *self);
 extern void pf_kdtree_clear(pf_kdtree_t *self);
 
 // Insert a pose into the tree
+//插入一个位置到tree
 extern void pf_kdtree_insert(pf_kdtree_t *self, pf_vector_t pose, double value);
 
 // Cluster the leaves in the tree
