@@ -32,7 +32,9 @@
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "move_base_node");
-  tf2_ros::Buffer buffer(ros::Duration(10));
+  //创建TransformListener对象，一旦创建成功，相当于创建了侦听器，
+  //它就开始通过连接接受tf2转换，其中时间间隔为10秒
+  tf2_ros::Buffer buffer(ros::Duration(10));//十秒钟的时间间隔
   tf2_ros::TransformListener tf(buffer);
 
   move_base::MoveBase move_base( buffer );
