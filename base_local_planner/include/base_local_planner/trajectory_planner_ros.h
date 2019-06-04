@@ -75,6 +75,9 @@ namespace base_local_planner {
    * @class TrajectoryPlannerROS
    * @brief A ROS wrapper for the trajectory controller that queries the param server to construct a controller
    */
+   //BaseLocalPlanner是所有局部路径规划器的基类
+   //文件trajectory_planner_ros.cpp调用的是trajectory_planner.cpp文件，其中实现了dwa算法和
+   //和trajecotry rollout算法
   class TrajectoryPlannerROS : public nav_core::BaseLocalPlanner {
     public:
       /**
