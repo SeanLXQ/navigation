@@ -85,6 +85,8 @@ void PlannerWithCostmap::poseCallback(const rm::PoseStamped::ConstPtr& goal) {
     makePlan(global_pose, *goal, path);
 }
 
+//在构造函数中，一是提供planservice，一旦有请求，就会调用makeplan函数
+//另一个就是会接受goal话题，调用回调函数poseCallBack，最终调用到makeplan
 PlannerWithCostmap::PlannerWithCostmap(string name, Costmap2DROS* cmap) :
         GlobalPlanner(name, cmap->getCostmap(), cmap->getGlobalFrameID()) {
     ros::NodeHandle private_nh("~");
@@ -102,7 +104,7 @@ int main(int argc, char** argv) {
     tf2_ros::TransformListener tf(buffer);
 
     costmap_2d::Costmap2DROS lcr("costmap", buffer);
-
+	//初始化pppp，并传入参数planner
     global_planner::PlannerWithCostmap pppp("planner", &lcr);
 
     ros::spin();
