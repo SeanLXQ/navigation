@@ -57,6 +57,8 @@ namespace move_base {
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
+	//as_Î¬»¤movebaseµÄmovebaseactionserver×´Ì¬»ú£¬²¢ÇÒĞÂ½¨Ò»¸öexecutecb»Øµ÷Ïß³Ì
+	//boost::bind(&MoveBase::execteCb, this, _1)±íÊ¾µÄÊÇthis->execteCb(ÊÕµ½µÄµÚÒ»¸ö²ÎÊı)
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
     ros::NodeHandle private_nh("~");
@@ -66,6 +68,7 @@ namespace move_base {
 
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
+	//²ÎÊıµÄÅäÖÃ¶ÁÈ¡
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
@@ -79,15 +82,17 @@ namespace move_base {
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
 
-    //set up plan triple buffer
+    //set up plan triple bufferÉèÖÃplanµÄÈıÖØ»º³åÇø
     planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
     latest_plan_ = new std::vector<geometry_msgs::PoseStamped>();
     controller_plan_ = new std::vector<geometry_msgs::PoseStamped>();
 
-    //set up the planner's thread
+    //set up the planner's thread ´´½¨plannerµÄÏß³Ì
     planner_thread_ = new boost::thread(boost::bind(&MoveBase::planThread, this));
 
-    //for commanding the base
+    //for commanding the base ÎªÁËÖ¸»ÓµØÅÌÔË¶¯
+    //vel_pub_ ·¢²¼¶ÔÏóÎªgeometry_msgs::TwistµÄcmd_velµÄÏûÏ¢
+    //current_goal_pub_·¢²¼¶ÔÏóÎªgeometry_msgs::PoseStampedµÄcurrent_goalµÄÏûÏ¢
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
 
@@ -553,13 +558,14 @@ namespace move_base {
     planner_cond_.notify_one();
   }
 
-  /**
-  *planThreadç”¨åˆ°äº†ä¸€ä¸ªcondition variable---planner_cond_å®ç°ç‰¹å®šé¢‘ç‡å”¤é†’çº¿ç¨‹ï¼Œ
-  *åŒæ—¶æœ‰ä¸ªboolå˜é‡runPlanner_æ§åˆ¶è¿™ä¸ªçº¿ç¨‹æ˜¯å¦è¢«æ‰§è¡Œï¼šå¦‚æœrunPlanner_ == falseï¼Œ
-  *å³ä½¿çº¿ç¨‹è¢«å”¤é†’ä¹Ÿä¼šåœ¨planner_cond_.wait(lock)è¿™ä¸ªåœ°æ–¹sleepã€‚å½“æ•´ä¸ªçº¿ç¨‹å…è®¸å¾€ä¸‹æ‰§è¡Œçš„æ—¶å€™ï¼Œ
-  *çº¿ç¨‹ä¼šè°ƒç”¨makePlanæ¥çœŸæ­£å¹²æ´»ï¼Œä¹‹åå°†çŠ¶æ€æœºè®¾å®šä¸ºCONTROLLING, è¿™ä¼šè®©executeCbè¿™æ¡çº¿é‡Œè¿è¡Œä¸åŒçš„æ”¯çº¿ã€‚
-  *å½“ç„¶ï¼Œå¦‚æœmakePlanæ²¡æœ‰åŠæ³•ç»™å‡ºè§„åˆ’ï¼Œè¯´æ˜å°è½¦è¢«å¡ä½äº†ï¼ŒçŠ¶æ€æœºä¼šè¢«è®¾å®šä¸ºCLEARINGã€‚
-  */
+/*
+*plan threadÊµÏÖÌØ¶¨ÆµÂÊ»½ĞÑÏß³Ì£¬Í¬Ê±ÓĞ¸öbool±äÁ¿runplanner¿ØÖÆÏß³ÌÊÇ·ñ±»Ö´ĞĞ
+*Èç¹ûrunplanner==false£¬¼´Ê¹Ïß³Ì±»»½ĞÑÒ²»áÔÚplanner cond¡£wait lock Õâ¸öµØ·½sleep¡£
+*µ±Õû¸öÏß³ÌÔÊĞíÍùÏÂÖ´ĞĞµÄÊ±ºò£¬Ïß³Ì»áµ÷ÓÃmakeplanÀ´ÕæÕı¸É»î£¬Ö®ºó½«×´Ì¬»úÉè¶¨Îªcontrolling
+*Õâ»áÈÃexecutecbÕâÌõÏßÀïÔËĞĞ²»Í¬µÄÖ§Ïß¡£µ±È»£¬Èç¹ûmakeplanÃ»ÓĞ°ì·¨¸ø³ö¹æ»®£¬ËµÃ÷Ğ¡³µ±»¿¨×¡
+*ÁË£¬×´Ì¬»ú»á±»Éè¶¨Îªclearing
+*
+*/
   void MoveBase::planThread(){
     ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
     ros::NodeHandle n;
@@ -642,12 +648,13 @@ namespace move_base {
     }
   }
 
-  /**
-  *åœ¨æ”¶åˆ°ç›®æ ‡åï¼ŒexecuteCbå°±ä¼šè¢«æ¿€æ´»ã€‚å¯ä»¥çœ‹åˆ°æœ‰æ¥è¿‘100è¡Œåœ¨å¤„ç†æ”¶åˆ°æ•°æ®çš„ä¸€äº›çäº‹ï¼Œ
-  *ä¸ç®¡ç›®æ ‡æ˜¯å¦è¢«æŠ¢å (actionçš„ç‰¹ç‚¹)è¿˜æ˜¯å•¥ï¼Œæœ€åå®ç°çš„æ•ˆæœå°±æ˜¯å°†ç›®æ ‡ä¼ ç»™executeCycleå¤„ç†ï¼Œ
-  *å°†run_planner_è®¾å®šä¸ºtrueï¼Œç„¶åplanThreadä¼šå¼€å§‹ä¸æ–­å…¨å±€è§„åˆ’ã€‚æ³¨æ„è¿™é‡Œä¸æ˜¯è§„åˆ’ä¸€æ¬¡å°±å®Œäº†ï¼Œ
-  *å› ä¸ºé™¤éå‡ºé—®é¢˜æˆ–è€…å®Œæˆç›®æ ‡ï¼Œrun_planner_ä¸ä¼šè¢«è®¾å®šä¼šfalseã€‚
-  */
+/*
+*ÔÚÊÕµ½Ä¿±êºó£¬executecb¾Í»á±»¼¤»î¡£¿ÉÒÔ¿´µ½½Ó½ü100ĞĞÔÚ´¦ÀíÊÕµ½Êı¾İµÄÒ»Ğ©ËöÊÂ£¬²»¹ÜÄ¿±êÊÇ·ñ±»
+*ÇÀÕ¼---actionµÄÌØµã---»¹ÊÇÉ¶£¬×îºóÊµÏÖµÄÏÊ¹û¾ÍÊÇ½«Ä¿±ê´«¸øexecutecycle´¦Àí£¬½«run plannerÉè¶¨Îª
+*true£¬È»ºóplanthread »á¿ªÊ¼²»¶ÏÈ«¾Ö¹æ»®¡£×¢ÒâÕâÀï²»ÊÇ¹æ»®Ò»´Î¾ÍÍêÁË£¬ÒòÎª³ı·Ç³öÎÊÌâ»òÕßÍê³ÉÄ¿±ê£¬
+*ran planner²»»á±»Éè¶¨³Éfalse
+*
+*/
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
