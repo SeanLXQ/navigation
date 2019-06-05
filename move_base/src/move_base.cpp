@@ -51,16 +51,19 @@ namespace move_base {
     tf_(tf),
     as_(NULL),
     planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
+    //插件载入对象。参数1.插件包的路径，参数2.插件类基类的全名
     bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
-	//as_维护movebase的movebaseactionserver状态机，并且新建一个executecb回调线程
+	//as_维护movebase的movebaseactionserver状态机，并且新建一个executecb回调线程,接收的消息类型为movebaseactiongoal
 	//boost::bind(&MoveBase::execteCb, this, _1)表示的是this->execteCb(收到的第一个参数)
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
+	//设置节点句柄
+	//ros::NodeHandle nh管理节点内部的引用计数来自动启动和关闭节点
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
 
@@ -68,7 +71,9 @@ namespace move_base {
 
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
-	//参数的配置读取
+	//参数的配置读取,
+	//表示名称为base_global_planner值为std::string("navfn/NavfnRos")的参数初始化global_planner，第一次运行为默认值
+	//可以同launch文件修改配置参数
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
@@ -87,21 +92,23 @@ namespace move_base {
     latest_plan_ = new std::vector<geometry_msgs::PoseStamped>();
     controller_plan_ = new std::vector<geometry_msgs::PoseStamped>();
 
-    //set up the planner's thread 创建planner的线程
+    //set up the planner's thread 创建planner的线程---planThread
     planner_thread_ = new boost::thread(boost::bind(&MoveBase::planThread, this));
 
-    //for commanding the base 为了指挥地盘运动
+    //for commanding the base 为了指挥底盘运动
     //vel_pub_ 发布对象为geometry_msgs::Twist的cmd_vel的消息
     //current_goal_pub_发布对象为geometry_msgs::PoseStamped的current_goal的消息
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
 
+	//在当前节点下创建move_base节点，发布MoveBaseActionGoal的goal消息
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
     //like nav_view and rviz
+    //创建节点move_base_simple 节点订阅goal话题，当收到消息后调用this->goalCB
     ros::NodeHandle simple_nh("move_base_simple");
     goal_sub_ = simple_nh.subscribe<geometry_msgs::PoseStamped>("goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
 
@@ -119,7 +126,7 @@ namespace move_base {
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
 
-    //initialize the global planner
+    //initialize the global planner初始化全局规划器
     try {
       planner_ = bgp_loader_.createInstance(global_planner);
       planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
