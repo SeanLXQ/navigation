@@ -121,20 +121,22 @@ namespace move_base {
     private_nh.param("shutdown_costmaps", shutdown_costmaps_, false);
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
-
+	
+	//为控制器的costmap创建ros wrapper，然后初始化我们底层映射使用的指针
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
 
     //initialize the global planner初始化全局规划器
     try {
-      planner_ = bgp_loader_.createInstance(global_planner);
-      planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);
+      planner_ = bgp_loader_.createInstance(global_planner);//创建nav_core::BaseGlobalPlanner类的实例
+      //initialize(name, map) name:规划器名称
+      planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);//初始化
     } catch (const pluginlib::PluginlibException& ex) {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", global_planner.c_str(), ex.what());
       exit(1);
     }
-
+	
     //create the ros wrapper for the controller's costmap... and initializer a pointer we'll use with the underlying map
     controller_costmap_ros_ = new costmap_2d::Costmap2DROS("local_costmap", tf_);
     controller_costmap_ros_->pause();
@@ -150,16 +152,20 @@ namespace move_base {
     }
 
     // Start actively updating costmaps based on sensor data
+    //开始根据传感器数据更新地图信息
     planner_costmap_ros_->start();
     controller_costmap_ros_->start();
 
     //advertise a service for getting a plan
+    //创建make plan的服务，来接受plan，并调用this->planService
     make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
 
     //advertise a service for clearing the costmaps
+    //创建clear costmaps服务，来接收清楚地图的消息，并调用this->clearCostmapsService
     clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
+    //如果我们再停用时关闭了我们的成本图
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Stopping costmaps initially");
       planner_costmap_ros_->stop();
@@ -167,6 +173,7 @@ namespace move_base {
     }
 
     //load any user specified recovery behaviors, and if that fails load the defaults
+    //加载用户定义的recovery behaviors，如果没有定义就加载默认值
     if(!loadRecoveryBehaviors(private_nh)){
       loadDefaultRecoveryBehaviors();
     }
@@ -178,6 +185,7 @@ namespace move_base {
     recovery_index_ = 0;
 
     //we're all set up now so we can start the action server
+    //显式的启动服务器
     as_->start();
 
     dsrv_ = new dynamic_reconfigure::Server<move_base::MoveBaseConfig>(ros::NodeHandle("~"));
@@ -664,20 +672,25 @@ namespace move_base {
 */
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
+  //检测终点位置是否合法
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
+		//不合法 将活动目标的状态设置为已中止
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
 
+	//将目标位置转换为全局地图下的goal
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
 
     //we have a goal so start the planner
+    //我们获得目标后需要启动规划器
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
     runPlanner_ = true;
     planner_cond_.notify_one();
     lock.unlock();
 
+	//发布goal的消息
     current_goal_pub_.publish(goal);
     std::vector<geometry_msgs::PoseStamped> global_plan;
 
