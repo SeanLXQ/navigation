@@ -686,7 +686,7 @@ namespace move_base {
     //我们获得目标后需要启动规划器
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
-    runPlanner_ = true;
+    runPlanner_ = true;//plan thread判断使用
     planner_cond_.notify_one();
     lock.unlock();
 
@@ -696,12 +696,14 @@ namespace move_base {
 
     ros::Rate r(controller_frequency_);
     if(shutdown_costmaps_){
+		//如果地图处于关闭状态，就打开
       ROS_DEBUG_NAMED("move_base","Starting up costmaps that were shut down previously");
       planner_costmap_ros_->start();
       controller_costmap_ros_->start();
     }
 
     //we want to make sure that we reset the last time we had a valid plan and control
+    //我们想要确保在上次有效计划和控制时重置
     last_valid_control_ = ros::Time::now();
     last_valid_plan_ = ros::Time::now();
     last_oscillation_reset_ = ros::Time::now();
@@ -710,6 +712,7 @@ namespace move_base {
     ros::NodeHandle n;
     while(n.ok())
     {
+    	//检查频率设置
       if(c_freq_change_)
       {
         ROS_INFO("Setting controller frequency to %.2f", controller_frequency_);
@@ -717,8 +720,9 @@ namespace move_base {
         c_freq_change_ = false;
       }
 
-      if(as_->isPreemptRequested()){
-        if(as_->isNewGoalAvailable()){
+      if(as_->isPreemptRequested()){//允许轮询实现查询有关抢占请求的信息
+        if(as_->isNewGoalAvailable()){//如果有新的目标更新
+			//如果我们处于活跃状态并且有新目标可用，我们会接受他，但不会关闭任何东西
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
 
@@ -756,7 +760,7 @@ namespace move_base {
 
           //notify the ActionServer that we've successfully preempted
           ROS_DEBUG_NAMED("move_base","Move base preempting the current goal");
-          as_->setPreempted();
+          as_->setPreempted();//将活动目标的状态设置为抢占
 
           //we'll actually return from execute after preempting
           return;
@@ -764,12 +768,13 @@ namespace move_base {
       }
 
       //we also want to check if we've changed global frames because we need to transform our goal pose
-      if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
+		//我们还想检查我们是否已经改变了全局帧，因为我们需要改变我们的目标姿势
+	  if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
         goal = goalToGlobalFrame(goal);
 
         //we want to go back to the planning state for the next execution cycle
-        recovery_index_ = 0;
-        state_ = PLANNING;
+        recovery_index_ = 0;//给executeCycle使用
+        state_ = PLANNING;//给executeCycle使用
 
         //we have a new goal so make sure the planner is awake
         lock.lock();
@@ -779,6 +784,7 @@ namespace move_base {
         lock.unlock();
 
         //publish the goal point to the visualizer
+        //把目标消息发送给可视化系统
         ROS_DEBUG_NAMED("move_base","The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
         current_goal_pub_.publish(goal);
 
@@ -793,6 +799,7 @@ namespace move_base {
       ros::WallTime start = ros::WallTime::now();
 
       //the real work on pursuing a goal is done here
+      //真正的寻路在这里
       bool done = executeCycle(goal, global_plan);
 
       //if we're done, then we'll return from execute
