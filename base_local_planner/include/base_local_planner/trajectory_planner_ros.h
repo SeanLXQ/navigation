@@ -166,6 +166,7 @@ namespace base_local_planner {
     private:
       /**
        * @brief Callback to update the local planner's parameters based on dynamic reconfigure
+       *根据动态的重新配置更新局部规划器的参数
        */
       void reconfigureCB(BaseLocalPlannerConfig &config, uint32_t level);
 
