@@ -69,8 +69,16 @@ namespace move_base {
   //typedefs to help us out with the action server so that we don't hace to type so much
   typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
 
+/*  RecoveryTrigger对应的是在相应状态下出现的失败。
+*state_状态一旦进入PLANNING，就唤醒planThread线程，在其中一旦找到plan就将状态置为CONTROLLING,
+*，如果没有找到，就将状态置为CLEARING, recovery_trigger =PLANNING_R.
+*如果状态机在CONTROLLING状态，会首先检查是否到达目的地，如果到了，则resetState(),并关闭planThread
+*如果满足震荡条件，就发布速度0，状态置为CLEARING,recovery_trigger=OSCILLATION_R
+**计算速度的时候如果失败就检查是否超时，如果超时就发布0速度，state_=CLEARING,recovery_trigger=CONTROLLING_R,
+**没有超时则 state_=PLANNING,发布0速度，并唤醒planThread
+*/
   enum MoveBaseState {
-    PLANNING,
+    PLANNING,      
     CONTROLLING,
     CLEARING
   };
@@ -93,6 +101,7 @@ namespace move_base {
        * @param name The name of the action
        * @param tf A reference to a TransformListener
        */
+       //movebase类的构造函数，读取配置参数，加载所选择的插件，开启global planner线程
       MoveBase(tf2_ros::Buffer& tf);
 
       /**
@@ -106,6 +115,7 @@ namespace move_base {
        * @param global_plan A reference to the global plan being used
        * @return True if processing of the goal is done, false otherwise
        */
+       //local planner核心工作函数
       bool executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan);
 
     private:
@@ -131,6 +141,7 @@ namespace move_base {
        * @param  plan Will be filled in with the plan made by the planner
        * @return  True if planning succeeds, false otherwise
        */
+       //调用planner_->makePlan,这里既调用bool NavfnROS::makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan)
       bool makePlan(const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
 
       /**
@@ -138,11 +149,13 @@ namespace move_base {
        * @param node The ros::NodeHandle to be used for loading parameters 
        * @return True if the recovery behaviors were loaded successfully, false otherwise
        */
+       //加载指定的void MoveBase::loadDefaultRecoveryBehaviors()
       bool loadRecoveryBehaviors(ros::NodeHandle node);
 
       /**
        * @brief  Loads the default recovery behaviors for the navigation stack
        */
+       //加载默认的void MoveBase::loadDefaultRecoveryBehaviors()
       void loadDefaultRecoveryBehaviors();
 
       /**
@@ -160,12 +173,16 @@ namespace move_base {
       /**
        * @brief  Reset the state of the move_base action and send a zero velocity command to the base
        */
+       //状态重置，速度归零
       void resetState();
 
+		//将接收到的新目标重新发送给action server
       void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
-
+		//会被executeCB,executeCycle唤醒或挂起
       void planThread();
 
+		//每次goal到来都会被调用，如果有新目标到来而被抢占则唤醒planthread线程处理，否则
+		//味取消目标并挂起处理线程
       void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
 
       bool isQuaternionValid(const geometry_msgs::Quaternion& q);
@@ -230,7 +247,8 @@ namespace move_base {
 
       boost::recursive_mutex configuration_mutex_;
       dynamic_reconfigure::Server<move_base::MoveBaseConfig> *dsrv_;
-      
+
+	  //动态更改节点参数的回调函数，用于修改参数
       void reconfigureCB(move_base::MoveBaseConfig &config, uint32_t level);
 
       move_base::MoveBaseConfig last_config_;
