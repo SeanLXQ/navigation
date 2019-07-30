@@ -1,4 +1,4 @@
-/*********************************************************************
+ï»¿/*********************************************************************
 *
 * Software License Agreement (BSD License)
 *
@@ -51,19 +51,19 @@ namespace move_base {
     tf_(tf),
     as_(NULL),
     planner_costmap_ros_(NULL), controller_costmap_ros_(NULL),
-    //²å¼şÔØÈë¶ÔÏó¡£²ÎÊı1.²å¼ş°üµÄÂ·¾¶£¬²ÎÊı2.²å¼şÀà»ùÀàµÄÈ«Ãû
+    //æ’ä»¶è½½å…¥å¯¹è±¡ã€‚å‚æ•°1.æ’ä»¶åŒ…çš„è·¯å¾„ï¼Œå‚æ•°2.æ’ä»¶ç±»åŸºç±»çš„å…¨å
     bgp_loader_("nav_core", "nav_core::BaseGlobalPlanner"),
     blp_loader_("nav_core", "nav_core::BaseLocalPlanner"), 
     recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
-	//as_Î¬»¤movebaseµÄmovebaseactionserver×´Ì¬»ú£¬²¢ÇÒĞÂ½¨Ò»¸öexecutecb»Øµ÷Ïß³Ì,½ÓÊÕµÄÏûÏ¢ÀàĞÍÎªmovebaseactiongoal
-	//boost::bind(&MoveBase::execteCb, this, _1)±íÊ¾µÄÊÇthis->execteCb(ÊÕµ½µÄµÚÒ»¸ö²ÎÊı)
+	//as_ç»´æŠ¤movebaseçš„movebaseactionserverçŠ¶æ€æœºï¼Œå¹¶ä¸”æ–°å»ºä¸€ä¸ªexecutecbå›è°ƒçº¿ç¨‹,æ¥æ”¶çš„æ¶ˆæ¯ç±»å‹ä¸ºmovebaseactiongoal
+	//boost::bind(&MoveBase::execteCb, this, _1)è¡¨ç¤ºçš„æ˜¯this->execteCb(æ”¶åˆ°çš„ç¬¬ä¸€ä¸ªå‚æ•°)
     as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
-	//ÉèÖÃ½Úµã¾ä±ú
-	//ros::NodeHandle nh¹ÜÀí½ÚµãÄÚ²¿µÄÒıÓÃ¼ÆÊıÀ´×Ô¶¯Æô¶¯ºÍ¹Ø±Õ½Úµã
+	//è®¾ç½®èŠ‚ç‚¹å¥æŸ„
+	//ros::NodeHandle nhç®¡ç†èŠ‚ç‚¹å†…éƒ¨çš„å¼•ç”¨è®¡æ•°æ¥è‡ªåŠ¨å¯åŠ¨å’Œå…³é—­èŠ‚ç‚¹
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
 
@@ -71,9 +71,9 @@ namespace move_base {
 
     //get some parameters that will be global to the move base node
     std::string global_planner, local_planner;
-	//²ÎÊıµÄÅäÖÃ¶ÁÈ¡,
-	//±íÊ¾Ãû³ÆÎªbase_global_plannerÖµÎªstd::string("navfn/NavfnRos")µÄ²ÎÊı³õÊ¼»¯global_planner£¬µÚÒ»´ÎÔËĞĞÎªÄ¬ÈÏÖµ
-	//¿ÉÒÔÍ¬launchÎÄ¼şĞŞ¸ÄÅäÖÃ²ÎÊı
+	//å‚æ•°çš„é…ç½®è¯»å–,
+	//è¡¨ç¤ºåç§°ä¸ºbase_global_plannerå€¼ä¸ºstd::string("navfn/NavfnRos")çš„å‚æ•°åˆå§‹åŒ–global_plannerï¼Œç¬¬ä¸€æ¬¡è¿è¡Œä¸ºé»˜è®¤å€¼
+	//å¯ä»¥åŒlaunchæ–‡ä»¶ä¿®æ”¹é…ç½®å‚æ•°
     private_nh.param("base_global_planner", global_planner, std::string("navfn/NavfnROS"));
     private_nh.param("base_local_planner", local_planner, std::string("base_local_planner/TrajectoryPlannerROS"));
     private_nh.param("global_costmap/robot_base_frame", robot_base_frame_, std::string("base_link"));
@@ -87,28 +87,28 @@ namespace move_base {
     private_nh.param("oscillation_timeout", oscillation_timeout_, 0.0);
     private_nh.param("oscillation_distance", oscillation_distance_, 0.5);
 
-    //set up plan triple bufferÉèÖÃplanµÄÈıÖØ»º³åÇø
-    planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
-    latest_plan_ = new std::vector<geometry_msgs::PoseStamped>();
-    controller_plan_ = new std::vector<geometry_msgs::PoseStamped>();
+    //set up plan triple bufferè®¾ç½®plançš„ä¸‰é‡ç¼“å†²åŒº
+    planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();//planthread ,reconfigureCB
+    latest_plan_ = new std::vector<geometry_msgs::PoseStamped>();//execteCycle, planThread, reconfigureCB
+    controller_plan_ = new std::vector<geometry_msgs::PoseStamped>();//execteCycle,reconfigureCB
 
-    //set up the planner's thread ´´½¨plannerµÄÏß³Ì---planThread
+    //set up the planner's thread åˆ›å»ºplannerçš„çº¿ç¨‹---planThread
     planner_thread_ = new boost::thread(boost::bind(&MoveBase::planThread, this));
 
-    //for commanding the base ÎªÁËÖ¸»Óµ×ÅÌÔË¶¯
-    //vel_pub_ ·¢²¼¶ÔÏóÎªgeometry_msgs::TwistµÄcmd_velµÄÏûÏ¢
-    //current_goal_pub_·¢²¼¶ÔÏóÎªgeometry_msgs::PoseStampedµÄcurrent_goalµÄÏûÏ¢
+    //for commanding the base ä¸ºäº†æŒ‡æŒ¥åº•ç›˜è¿åŠ¨
+    //vel_pub_ å‘å¸ƒå¯¹è±¡ä¸ºgeometry_msgs::Twistçš„cmd_velçš„æ¶ˆæ¯
+    //current_goal_pub_å‘å¸ƒå¯¹è±¡ä¸ºgeometry_msgs::PoseStampedçš„current_goalçš„æ¶ˆæ¯
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
 
-	//ÔÚµ±Ç°½ÚµãÏÂ´´½¨move_base½Úµã£¬·¢²¼MoveBaseActionGoalµÄgoalÏûÏ¢
+	//åœ¨å½“å‰èŠ‚ç‚¹ä¸‹åˆ›å»ºmove_baseèŠ‚ç‚¹ï¼Œå‘å¸ƒMoveBaseActionGoalçš„goalæ¶ˆæ¯
     ros::NodeHandle action_nh("move_base");
     action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
     //like nav_view and rviz
-    //´´½¨½Úµãmove_base_simple ½Úµã¶©ÔÄgoal»°Ìâ£¬µ±ÊÕµ½ÏûÏ¢ºóµ÷ÓÃthis->goalCB
+    //åˆ›å»ºèŠ‚ç‚¹move_base_simple èŠ‚ç‚¹è®¢é˜…goalè¯é¢˜ï¼Œå½“æ”¶åˆ°æ¶ˆæ¯åè°ƒç”¨this->goalCB
     ros::NodeHandle simple_nh("move_base_simple");
     goal_sub_ = simple_nh.subscribe<geometry_msgs::PoseStamped>("goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
 
@@ -122,16 +122,16 @@ namespace move_base {
     private_nh.param("clearing_rotation_allowed", clearing_rotation_allowed_, true);
     private_nh.param("recovery_behavior_enabled", recovery_behavior_enabled_, true);
 	
-	//Îª¿ØÖÆÆ÷µÄcostmap´´½¨ros wrapper£¬È»ºó³õÊ¼»¯ÎÒÃÇµ×²ãÓ³ÉäÊ¹ÓÃµÄÖ¸Õë
+	//ä¸ºæ§åˆ¶å™¨çš„costmapåˆ›å»ºros wrapperï¼Œç„¶ååˆå§‹åŒ–æˆ‘ä»¬åº•å±‚æ˜ å°„ä½¿ç”¨çš„æŒ‡é’ˆ
     //create the ros wrapper for the planner's costmap... and initializer a pointer we'll use with the underlying map
     planner_costmap_ros_ = new costmap_2d::Costmap2DROS("global_costmap", tf_);
     planner_costmap_ros_->pause();
 
-    //initialize the global planner³õÊ¼»¯È«¾Ö¹æ»®Æ÷
+    //initialize the global planneråˆå§‹åŒ–å…¨å±€è§„åˆ’å™¨
     try {
-      planner_ = bgp_loader_.createInstance(global_planner);//´´½¨nav_core::BaseGlobalPlannerÀàµÄÊµÀı
-      //initialize(name, map) name:¹æ»®Æ÷Ãû³Æ
-      planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);//³õÊ¼»¯
+      planner_ = bgp_loader_.createInstance(global_planner);//åˆ›å»ºnav_core::BaseGlobalPlannerç±»çš„å®ä¾‹
+      //initialize(name, map) name:è§„åˆ’å™¨åç§°
+      planner_->initialize(bgp_loader_.getName(global_planner), planner_costmap_ros_);//åˆå§‹åŒ–
     } catch (const pluginlib::PluginlibException& ex) {
       ROS_FATAL("Failed to create the %s planner, are you sure it is properly registered and that the containing library is built? Exception: %s", global_planner.c_str(), ex.what());
       exit(1);
@@ -152,20 +152,20 @@ namespace move_base {
     }
 
     // Start actively updating costmaps based on sensor data
-    //¿ªÊ¼¸ù¾İ´«¸ĞÆ÷Êı¾İ¸üĞÂµØÍ¼ĞÅÏ¢
+    //å¼€å§‹æ ¹æ®ä¼ æ„Ÿå™¨æ•°æ®æ›´æ–°åœ°å›¾ä¿¡æ¯
     planner_costmap_ros_->start();
     controller_costmap_ros_->start();
 
     //advertise a service for getting a plan
-    //´´½¨make planµÄ·şÎñ£¬À´½ÓÊÜplan£¬²¢µ÷ÓÃthis->planService
+    //åˆ›å»ºmake plançš„æœåŠ¡ï¼Œæ¥æ¥å—planï¼Œå¹¶è°ƒç”¨this->planService
     make_plan_srv_ = private_nh.advertiseService("make_plan", &MoveBase::planService, this);
 
     //advertise a service for clearing the costmaps
-    //´´½¨clear costmaps·şÎñ£¬À´½ÓÊÕÇå³şµØÍ¼µÄÏûÏ¢£¬²¢µ÷ÓÃthis->clearCostmapsService
+    //åˆ›å»ºclear costmapsæœåŠ¡ï¼Œæ¥æ¥æ”¶æ¸…æ¥šåœ°å›¾çš„æ¶ˆæ¯ï¼Œå¹¶è°ƒç”¨this->clearCostmapsService
     clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
 
     //if we shutdown our costmaps when we're deactivated... we'll do that now
-    //Èç¹ûÎÒÃÇÔÙÍ£ÓÃÊ±¹Ø±ÕÁËÎÒÃÇµÄ³É±¾Í¼
+    //å¦‚æœæˆ‘ä»¬å†åœç”¨æ—¶å…³é—­äº†æˆ‘ä»¬çš„æˆæœ¬å›¾
     if(shutdown_costmaps_){
       ROS_DEBUG_NAMED("move_base","Stopping costmaps initially");
       planner_costmap_ros_->stop();
@@ -173,7 +173,7 @@ namespace move_base {
     }
 
     //load any user specified recovery behaviors, and if that fails load the defaults
-    //¼ÓÔØÓÃ»§¶¨ÒåµÄrecovery behaviors£¬Èç¹ûÃ»ÓĞ¶¨Òå¾Í¼ÓÔØÄ¬ÈÏÖµ
+    //åŠ è½½ç”¨æˆ·å®šä¹‰çš„recovery behaviorsï¼Œå¦‚æœæ²¡æœ‰å®šä¹‰å°±åŠ è½½é»˜è®¤å€¼
     if(!loadRecoveryBehaviors(private_nh)){
       loadDefaultRecoveryBehaviors();
     }
@@ -185,7 +185,7 @@ namespace move_base {
     recovery_index_ = 0;
 
     //we're all set up now so we can start the action server
-    //ÏÔÊ½µÄÆô¶¯·şÎñÆ÷
+    //æ˜¾å¼çš„å¯åŠ¨æœåŠ¡å™¨
     as_->start();
 
     dsrv_ = new dynamic_reconfigure::Server<move_base::MoveBaseConfig>(ros::NodeHandle("~"));
@@ -574,11 +574,11 @@ namespace move_base {
   }
 
 /*
-*plan threadÊµÏÖÌØ¶¨ÆµÂÊ»½ĞÑÏß³Ì£¬Í¬Ê±ÓĞ¸öbool±äÁ¿runplanner¿ØÖÆÏß³ÌÊÇ·ñ±»Ö´ĞĞ
-*Èç¹ûrunplanner==false£¬¼´Ê¹Ïß³Ì±»»½ĞÑÒ²»áÔÚplanner cond¡£wait lock Õâ¸öµØ·½sleep¡£
-*µ±Õû¸öÏß³ÌÔÊĞíÍùÏÂÖ´ĞĞµÄÊ±ºò£¬Ïß³Ì»áµ÷ÓÃmakeplanÀ´ÕæÕı¸É»î£¬Ö®ºó½«×´Ì¬»úÉè¶¨Îªcontrolling
-*Õâ»áÈÃexecutecbÕâÌõÏßÀïÔËĞĞ²»Í¬µÄÖ§Ïß¡£µ±È»£¬Èç¹ûmakeplanÃ»ÓĞ°ì·¨¸ø³ö¹æ»®£¬ËµÃ÷Ğ¡³µ±»¿¨×¡
-*ÁË£¬×´Ì¬»ú»á±»Éè¶¨Îªclearing
+*plan threadå®ç°ç‰¹å®šé¢‘ç‡å”¤é†’çº¿ç¨‹ï¼ŒåŒæ—¶æœ‰ä¸ªboolå˜é‡runplanneræ§åˆ¶çº¿ç¨‹æ˜¯å¦è¢«æ‰§è¡Œ
+*å¦‚æœrunplanner==falseï¼Œå³ä½¿çº¿ç¨‹è¢«å”¤é†’ä¹Ÿä¼šåœ¨planner condã€‚wait lock è¿™ä¸ªåœ°æ–¹sleepã€‚
+*å½“æ•´ä¸ªçº¿ç¨‹å…è®¸å¾€ä¸‹æ‰§è¡Œçš„æ—¶å€™ï¼Œçº¿ç¨‹ä¼šè°ƒç”¨makeplanæ¥çœŸæ­£å¹²æ´»ï¼Œä¹‹åå°†çŠ¶æ€æœºè®¾å®šä¸ºcontrolling
+*è¿™ä¼šè®©executecbè¿™æ¡çº¿é‡Œè¿è¡Œä¸åŒçš„æ”¯çº¿ã€‚å½“ç„¶ï¼Œå¦‚æœmakeplanæ²¡æœ‰åŠæ³•ç»™å‡ºè§„åˆ’ï¼Œè¯´æ˜å°è½¦è¢«å¡ä½
+*äº†ï¼ŒçŠ¶æ€æœºä¼šè¢«è®¾å®šä¸ºclearing
 *
 */
   void MoveBase::planThread(){
@@ -589,9 +589,10 @@ namespace move_base {
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     while(n.ok()){
       //check if we should run the planner (the mutex is locked)
-      //runPlanner_¿ØÖÆ³ÌĞòÊÇ·ñ¼ÌĞøÏòÏÂÔËĞĞ
+      //runPlanner_æ§åˆ¶ç¨‹åºæ˜¯å¦ç»§ç»­å‘ä¸‹è¿è¡Œ
       while(wait_for_wake || !runPlanner_){
         //if we should not be running the planner then suspend this thread
+        //ç­‰å¾…çº¿ç¨‹è¢«å”¤é†’planner_cond_.notify_one() executeCb executeCycle ï¼ˆplanThreadæœ€åçš„æ—¶å€™è®¾ç½®ï¼‰
         ROS_DEBUG_NAMED("move_base_plan_thread","Planner thread is suspending");
         planner_cond_.wait(lock);
         wait_for_wake = false;
@@ -599,37 +600,42 @@ namespace move_base {
       ros::Time start_time = ros::Time::now();
 
       //time to plan! get a copy of the goal and unlock the mutex
-      //planner_goal_ÓÉexecuteCbÌá¹©
+      //å¼€å§‹è§„åˆ’ï¼Œå¾—åˆ°ä¸€ä¸ªgoalçš„æ‹·è´ï¼Œå¹¶è§£é”mutex
+      //planner_goal_ç”±executeCbæä¾›
       geometry_msgs::PoseStamped temp_goal = planner_goal_;
       lock.unlock();
       ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
       //run planner
-      planner_plan_->clear();
+      planner_plan_->clear();//åˆå§‹åŒ–
+      //makePlanåšå…¨å±€è§„åˆ’ï¼Œç»“æœå­˜å‚¨åœ¨planner_plan_é‡Œé¢
       bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
 
       if(gotPlan){
         ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
         //pointer swap the plans under mutex (the controller will pull from latest_plan_)
+        //
         std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
 
         lock.lock();
         planner_plan_ = latest_plan_;
         latest_plan_ = temp_plan;
-        last_valid_plan_ = ros::Time::now();
+        last_valid_plan_ = ros::Time::now();//æœ€æ–°å¯ç”¨è·¯å¾„æ—¶é—´
         planning_retries_ = 0;
         new_global_plan_ = true;
 
         ROS_DEBUG_NAMED("move_base_plan_thread","Generated a plan from the base_global_planner");
 
         //make sure we only start the controller if we still haven't reached the goal
+        //ç¡®ä¿æˆ‘ä»¬æ²¡æœ‰åˆ°è¾¾ç»ˆç‚¹çš„æ—¶å€™å¼€å¯æ§åˆ¶å™¨
         if(runPlanner_)
           state_ = CONTROLLING;
-        if(planner_frequency_ <= 0)
+        if(planner_frequency_ <= 0)//è§„åˆ’å™¨é¢‘ç‡
           runPlanner_ = false;
         lock.unlock();
       }
       //if we didn't get a plan and we are in the planning state (the robot isn't moving)
+      //å¦‚æœæˆ‘ä»¬æ²¡æœ‰è®¡ç®—å‡ºè·¯å¾„ï¼Œå¹¶ä¸”æˆ‘ä»¬æ˜¯stateçŠ¶æ€ï¼ˆæœºå™¨äººä¸ç§»åŠ¨ï¼‰
       else if(state_==PLANNING){
         ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
@@ -637,6 +643,8 @@ namespace move_base {
         //check if we've tried to make a plan for over our time limit or our maximum number of retries
         //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
         //is negative (the default), it is just ignored and we have the same behavior as ever
+        //æ£€æŸ¥æˆ‘ä»¬æ˜¯å¦è¶…è¿‡å…è®¸è§„åˆ’çš„æœ€ç»ˆæ—¶é—´ï¼Œæˆ–è€…æˆ‘ä»¬çš„æœ€å¤§é‡è¯•è§„åˆ’æ¬¡æ•°è¶…é™ã€‚
+        //å¦‚æœæœ‰ä¸€ä¸ªæ¡ä»¶ä¸ºçœŸï¼Œæˆ‘ä»¬åœæ­¢è§„åˆ’issue#496
         lock.lock();
         planning_retries_++;
         if(runPlanner_ &&
@@ -645,16 +653,18 @@ namespace move_base {
           state_ = CLEARING;
           runPlanner_ = false;  // proper solution for issue #523
           publishZeroVelocity();
-          recovery_trigger_ = PLANNING_R;
+          recovery_trigger_ = PLANNING_R;//executeCycle resetState
         }
 
         lock.unlock();
       }
 
       //take the mutex for the next iteration
+      //ä¸ºä¸‹ä¸€æ¬¡çš„è¿­ä»£è·å–é”
       lock.lock();
 
       //setup sleep interface if needed
+      //è®¾ç½®å”¤é†’æ—¶é—´//å¦‚æœè§„åˆ’å™¨é¢‘ç‡å¤§äº0ï¼Œå¹¶ä¸”å½“å‰æ—¶é—´å°äºä¸Šä¸€æ¬¡è§„åˆ’èµ·å§‹æ—¶é—´+è§„åˆ’æœŸå‘¨æœŸ
       if(planner_frequency_ > 0){
         ros::Duration sleep_time = (start_time + ros::Duration(1.0/planner_frequency_)) - ros::Time::now();
         if (sleep_time > ros::Duration(0.0)){
@@ -666,46 +676,46 @@ namespace move_base {
   }
 
 /*
-*ÔÚÊÕµ½Ä¿±êºó£¬executecb¾Í»á±»¼¤»î¡£¿ÉÒÔ¿´µ½½Ó½ü100ĞĞÔÚ´¦ÀíÊÕµ½Êı¾İµÄÒ»Ğ©ËöÊÂ£¬²»¹ÜÄ¿±êÊÇ·ñ±»
-*ÇÀÕ¼---actionµÄÌØµã---»¹ÊÇÉ¶£¬×îºóÊµÏÖµÄÏÊ¹û¾ÍÊÇ½«Ä¿±ê´«¸øexecutecycle´¦Àí£¬½«run plannerÉè¶¨Îª
-*true£¬È»ºóplanthread »á¿ªÊ¼²»¶ÏÈ«¾Ö¹æ»®¡£×¢ÒâÕâÀï²»ÊÇ¹æ»®Ò»´Î¾ÍÍêÁË£¬ÒòÎª³ı·Ç³öÎÊÌâ»òÕßÍê³ÉÄ¿±ê£¬
-*ran planner²»»á±»Éè¶¨³Éfalse
+*åœ¨æ”¶åˆ°ç›®æ ‡åï¼Œexecutecbå°±ä¼šè¢«æ¿€æ´»ã€‚å¯ä»¥çœ‹åˆ°æ¥è¿‘100è¡Œåœ¨å¤„ç†æ”¶åˆ°æ•°æ®çš„ä¸€äº›çäº‹ï¼Œä¸ç®¡ç›®æ ‡æ˜¯å¦è¢«
+*æŠ¢å ---actionçš„ç‰¹ç‚¹---è¿˜æ˜¯å•¥ï¼Œæœ€åå®ç°çš„é²œæœå°±æ˜¯å°†ç›®æ ‡ä¼ ç»™executecycleå¤„ç†ï¼Œå°†run plannerè®¾å®šä¸º
+*trueï¼Œç„¶åplanthread ä¼šå¼€å§‹ä¸æ–­å…¨å±€è§„åˆ’ã€‚æ³¨æ„è¿™é‡Œä¸æ˜¯è§„åˆ’ä¸€æ¬¡å°±å®Œäº†ï¼Œå› ä¸ºé™¤éå‡ºé—®é¢˜æˆ–è€…å®Œæˆç›®æ ‡ï¼Œ
+*ran plannerä¸ä¼šè¢«è®¾å®šæˆfalse
 *
 */
   void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
   {
-  //¼ì²âÖÕµãÎ»ÖÃÊÇ·ñºÏ·¨
+  //æ£€æµ‹ç»ˆç‚¹ä½ç½®æ˜¯å¦åˆæ³•
     if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
-		//²»ºÏ·¨ ½«»î¶¯Ä¿±êµÄ×´Ì¬ÉèÖÃÎªÒÑÖĞÖ¹
+		//ä¸åˆæ³• å°†æ´»åŠ¨ç›®æ ‡çš„çŠ¶æ€è®¾ç½®ä¸ºå·²ä¸­æ­¢
       as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
 
-	//½«Ä¿±êÎ»ÖÃ×ª»»ÎªÈ«¾ÖµØÍ¼ÏÂµÄgoal
+	//å°†ç›®æ ‡ä½ç½®è½¬æ¢ä¸ºå…¨å±€åœ°å›¾ä¸‹çš„goal
     geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
 
     //we have a goal so start the planner
-    //ÎÒÃÇ»ñµÃÄ¿±êºóĞèÒªÆô¶¯¹æ»®Æ÷
+    //æˆ‘ä»¬è·å¾—ç›®æ ‡åéœ€è¦å¯åŠ¨è§„åˆ’å™¨
     boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
     planner_goal_ = goal;
-    runPlanner_ = true;//plan threadÅĞ¶ÏÊ¹ÓÃ
+    runPlanner_ = true;//plan threadåˆ¤æ–­ä½¿ç”¨
     planner_cond_.notify_one();
     lock.unlock();
 
-	//·¢²¼goalµÄÏûÏ¢
+	//å‘å¸ƒgoalçš„æ¶ˆæ¯
     current_goal_pub_.publish(goal);
     std::vector<geometry_msgs::PoseStamped> global_plan;
 
     ros::Rate r(controller_frequency_);
     if(shutdown_costmaps_){
-		//Èç¹ûµØÍ¼´¦ÓÚ¹Ø±Õ×´Ì¬£¬¾Í´ò¿ª
+		//å¦‚æœåœ°å›¾å¤„äºå…³é—­çŠ¶æ€ï¼Œå°±æ‰“å¼€
       ROS_DEBUG_NAMED("move_base","Starting up costmaps that were shut down previously");
       planner_costmap_ros_->start();
       controller_costmap_ros_->start();
     }
 
     //we want to make sure that we reset the last time we had a valid plan and control
-    //ÎÒÃÇÏëÒªÈ·±£ÔÚÉÏ´ÎÓĞĞ§¼Æ»®ºÍ¿ØÖÆÊ±ÖØÖÃ
+    //æˆ‘ä»¬æƒ³è¦ç¡®ä¿åœ¨ä¸Šæ¬¡æœ‰æ•ˆè®¡åˆ’å’Œæ§åˆ¶æ—¶é‡ç½®
     last_valid_control_ = ros::Time::now();
     last_valid_plan_ = ros::Time::now();
     last_oscillation_reset_ = ros::Time::now();
@@ -714,7 +724,7 @@ namespace move_base {
     ros::NodeHandle n;
     while(n.ok())
     {
-    	//¼ì²éÆµÂÊÉèÖÃ
+    	//æ£€æŸ¥é¢‘ç‡è®¾ç½®
       if(c_freq_change_)
       {
         ROS_INFO("Setting controller frequency to %.2f", controller_frequency_);
@@ -722,9 +732,9 @@ namespace move_base {
         c_freq_change_ = false;
       }
 
-      if(as_->isPreemptRequested()){//ÔÊĞíÂÖÑ¯ÊµÏÖ²éÑ¯ÓĞ¹ØÇÀÕ¼ÇëÇóµÄĞÅÏ¢
-        if(as_->isNewGoalAvailable()){//Èç¹ûÓĞĞÂµÄÄ¿±ê¸üĞÂ
-			//Èç¹ûÎÒÃÇ´¦ÓÚ»îÔ¾×´Ì¬²¢ÇÒÓĞĞÂÄ¿±ê¿ÉÓÃ£¬ÎÒÃÇ»á½ÓÊÜËû£¬µ«²»»á¹Ø±ÕÈÎºÎ¶«Î÷
+      if(as_->isPreemptRequested()){//å…è®¸è½®è¯¢å®ç°æŸ¥è¯¢æœ‰å…³æŠ¢å è¯·æ±‚çš„ä¿¡æ¯
+        if(as_->isNewGoalAvailable()){//å¦‚æœæœ‰æ–°çš„ç›®æ ‡æ›´æ–°
+			//å¦‚æœæˆ‘ä»¬å¤„äºæ´»è·ƒçŠ¶æ€å¹¶ä¸”æœ‰æ–°ç›®æ ‡å¯ç”¨ï¼Œæˆ‘ä»¬ä¼šæ¥å—ä»–ï¼Œä½†ä¸ä¼šå…³é—­ä»»ä½•ä¸œè¥¿
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
           move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
 
@@ -762,7 +772,7 @@ namespace move_base {
 
           //notify the ActionServer that we've successfully preempted
           ROS_DEBUG_NAMED("move_base","Move base preempting the current goal");
-          as_->setPreempted();//½«»î¶¯Ä¿±êµÄ×´Ì¬ÉèÖÃÎªÇÀÕ¼
+          as_->setPreempted();//å°†æ´»åŠ¨ç›®æ ‡çš„çŠ¶æ€è®¾ç½®ä¸ºæŠ¢å 
 
           //we'll actually return from execute after preempting
           return;
@@ -770,13 +780,13 @@ namespace move_base {
       }
 
       //we also want to check if we've changed global frames because we need to transform our goal pose
-		//ÎÒÃÇ»¹Ïë¼ì²éÎÒÃÇÊÇ·ñÒÑ¾­¸Ä±äÁËÈ«¾ÖÖ¡£¬ÒòÎªÎÒÃÇĞèÒª¸Ä±äÎÒÃÇµÄÄ¿±ê×ËÊÆ
+		//æˆ‘ä»¬è¿˜æƒ³æ£€æŸ¥æˆ‘ä»¬æ˜¯å¦å·²ç»æ”¹å˜äº†å…¨å±€å¸§ï¼Œå› ä¸ºæˆ‘ä»¬éœ€è¦æ”¹å˜æˆ‘ä»¬çš„ç›®æ ‡å§¿åŠ¿
 	  if(goal.header.frame_id != planner_costmap_ros_->getGlobalFrameID()){
         goal = goalToGlobalFrame(goal);
 
         //we want to go back to the planning state for the next execution cycle
-        recovery_index_ = 0;//¸øexecuteCycleÊ¹ÓÃ
-        state_ = PLANNING;//¸øexecuteCycleÊ¹ÓÃ
+        recovery_index_ = 0;//ç»™executeCycleä½¿ç”¨
+        state_ = PLANNING;//ç»™executeCycleä½¿ç”¨
 
         //we have a new goal so make sure the planner is awake
         lock.lock();
@@ -786,7 +796,7 @@ namespace move_base {
         lock.unlock();
 
         //publish the goal point to the visualizer
-        //°ÑÄ¿±êÏûÏ¢·¢ËÍ¸ø¿ÉÊÓ»¯ÏµÍ³
+        //æŠŠç›®æ ‡æ¶ˆæ¯å‘é€ç»™å¯è§†åŒ–ç³»ç»Ÿ
         ROS_DEBUG_NAMED("move_base","The global frame for move_base has changed, new frame: %s, new goal position x: %.2f, y: %.2f", goal.header.frame_id.c_str(), goal.pose.position.x, goal.pose.position.y);
         current_goal_pub_.publish(goal);
 
@@ -801,7 +811,7 @@ namespace move_base {
       ros::WallTime start = ros::WallTime::now();
 
       //the real work on pursuing a goal is done here
-      //ÕæÕıµÄÑ°Â·ÔÚÕâÀï
+      //çœŸæ­£çš„å¯»è·¯åœ¨è¿™é‡Œ
       bool done = executeCycle(goal, global_plan);
 
       //if we're done, then we'll return from execute
@@ -838,11 +848,11 @@ namespace move_base {
   bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& global_plan){
     boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
     //we need to be able to publish velocity commands
-    //ÓÃÀ´·¢²¼ËÙ¶ÈÏûÏ¢ 
+    //ç”¨æ¥å‘å¸ƒé€Ÿåº¦æ¶ˆæ¯ 
     geometry_msgs::Twist cmd_vel;
 
     //update feedback to correspond to our curent position
-    //¸üĞÂ·´À¡Êı¾İµ½ÎÒÃÇµÄµ±Ç°Î»ÖÃ
+    //æ›´æ–°åé¦ˆæ•°æ®åˆ°æˆ‘ä»¬çš„å½“å‰ä½ç½®
     geometry_msgs::PoseStamped global_pose;
     getRobotPose(global_pose, planner_costmap_ros_);
     const geometry_msgs::PoseStamped& current_position = global_pose;
@@ -853,7 +863,7 @@ namespace move_base {
     as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout
-    //     ¼ì²éÎÒÃÇÊÇ·ñÒÆ¶¯ÁË×ã¹»µÄ¾àÀëÀ´ÖØÖÃÕğµ´³¬Ê±//
+    //     æ£€æŸ¥æˆ‘ä»¬æ˜¯å¦ç§»åŠ¨äº†è¶³å¤Ÿçš„è·ç¦»æ¥é‡ç½®éœ‡è¡è¶…æ—¶//
 	  
     if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
     {
@@ -861,14 +871,14 @@ namespace move_base {
       oscillation_pose_ = current_position;
 
       //if our last recovery was caused by oscillation, we want to reset the recovery index 
-      //Èç¹û×îºóÒ»´Î»Ö¸´ÊÇÓÉÕğµ´ÒıÆğµÄ£¬ÄÇÎÒÃÇÖØÖÃ»Ö¸´Ë÷Òı//
-      //recovery_index_Ö÷ÒªÊÇ¸øCLEARING×´Ì¬Ê±Ê¹ÓÃµÄ¡£ÓÃÀ´µ÷ÓÃÏàÓ¦µÄrecovery behavior
+      //å¦‚æœæœ€åä¸€æ¬¡æ¢å¤æ˜¯ç”±éœ‡è¡å¼•èµ·çš„ï¼Œé‚£æˆ‘ä»¬é‡ç½®æ¢å¤ç´¢å¼•//
+      //recovery_index_ä¸»è¦æ˜¯ç»™CLEARINGçŠ¶æ€æ—¶ä½¿ç”¨çš„ã€‚ç”¨æ¥è°ƒç”¨ç›¸åº”çš„recovery behavior
       if(recovery_trigger_ == OSCILLATION_R)
         recovery_index_ = 0;
     }
 
     //check that the observation buffers for the costmap are current, we don't want to drive blind
-    //¼ì²écostmapµÄ»º³åÇøÊÇ·ñÊÇ×îĞÂµÄ£¬Èç¹û²»ÊÇ¾Í·¢²¼ËÙ¶È0//
+    //æ£€æŸ¥costmapçš„ç¼“å†²åŒºæ˜¯å¦æ˜¯æœ€æ–°çš„ï¼Œå¦‚æœä¸æ˜¯å°±å‘å¸ƒé€Ÿåº¦0//
     if(!controller_costmap_ros_->isCurrent()){
       ROS_WARN("[%s]:Sensor data is out of date, we're not going to allow commanding of the base for safety",ros::this_node::getName().c_str());
       publishZeroVelocity();
@@ -876,7 +886,7 @@ namespace move_base {
     }
 
     //if we have a new plan then grab it and give it to the controller
-    //Èç¹ûÎÒÃÇÓĞÒ»¸öĞÂµÄ¹æ»®£¬¾Í½«Ëü¸ø¿ØÖÆÆ÷//
+    //å¦‚æœæˆ‘ä»¬æœ‰ä¸€ä¸ªæ–°çš„è§„åˆ’ï¼Œå°±å°†å®ƒç»™æ§åˆ¶å™¨//
     if(new_global_plan_){
       //make sure to set the new plan flag to false
       new_global_plan_ = false;
@@ -884,7 +894,7 @@ namespace move_base {
       ROS_DEBUG_NAMED("move_base","Got a new plan...swap pointers");
 
       //do a pointer swap under mutex
-      //ÔÚËøµÄ±£»¤ÏÂ×ö¹æ»®×ª»»//
+      //åœ¨é”çš„ä¿æŠ¤ä¸‹åšè§„åˆ’è½¬æ¢//
       std::vector<geometry_msgs::PoseStamped>* temp_plan = controller_plan_;
 
       boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
@@ -899,7 +909,7 @@ namespace move_base {
         resetState();
 
         //disable the planner thread
-	//¹Ø±Õ¹æ»®Ïß³Ì¡£ runPlanner_ÊÇ¹æ»®Ïß³ÌµÄ±êÖ¾£ºfalse¹Ø±Õ£¬true´ò¿ª
+	//å…³é—­è§„åˆ’çº¿ç¨‹ã€‚ runPlanner_æ˜¯è§„åˆ’çº¿ç¨‹çš„æ ‡å¿—ï¼šfalseå…³é—­ï¼Œtrueæ‰“å¼€
         lock.lock();
         runPlanner_ = false;
         lock.unlock();
@@ -914,11 +924,11 @@ namespace move_base {
     }
 
     //the move_base state machine, handles the control logic for navigation
-    //movebaseµÄ×´Ì¬»ú£¬Ö¸»Óµ¼º½µÄ¿ØÖÆÂß¼­//state_
-    //state_ÓĞÈı¸ö×´Ì¬ PLANNING£»CONTROLLING£»CLEARING
+    //movebaseçš„çŠ¶æ€æœºï¼ŒæŒ‡æŒ¥å¯¼èˆªçš„æ§åˆ¶é€»è¾‘//state_
+    //state_æœ‰ä¸‰ä¸ªçŠ¶æ€ PLANNINGï¼›CONTROLLINGï¼›CLEARING
     switch(state_){
       //if we are in a planning state, then we'll attempt to make a plan
-      //Èç¹ûÎÒÃÇÔÚplanning×´Ì¬£¬ÎÒÃÇ»á³¢ÊÔ×öÒ»¸ö¹æ»®---½«runPlanner_Ğ´Îªtrue
+      //å¦‚æœæˆ‘ä»¬åœ¨planningçŠ¶æ€ï¼Œæˆ‘ä»¬ä¼šå°è¯•åšä¸€ä¸ªè§„åˆ’---å°†runPlanner_å†™ä¸ºtrue
       case PLANNING:
         {
           boost::recursive_mutex::scoped_lock lock(planner_mutex_);
@@ -929,18 +939,18 @@ namespace move_base {
         break;
 
       //if we're controlling, we'll attempt to find valid velocity commands
-      //Èç¹ûÎÒÃÇÔÚcontrolling×´Ì¬£¬ÎÒÃÇ³¢ÊÔÕÒµ½ÓĞĞ§µÄËÙ¶ÈÃüÁî
+      //å¦‚æœæˆ‘ä»¬åœ¨controllingçŠ¶æ€ï¼Œæˆ‘ä»¬å°è¯•æ‰¾åˆ°æœ‰æ•ˆçš„é€Ÿåº¦å‘½ä»¤
       case CONTROLLING:
         ROS_DEBUG_NAMED("move_base","In controlling state.");
 
         //check to see if we've reached our goal
-        //ÏÈ¼ì²éÎÒÃÇÊÇ·ñµ½´ïÖÕµã
+        //å…ˆæ£€æŸ¥æˆ‘ä»¬æ˜¯å¦åˆ°è¾¾ç»ˆç‚¹
         if(tc_->isGoalReached()){
           ROS_DEBUG_NAMED("move_base","Goal reached!");
           resetState();
 
           //disable the planner thread
-          //¹Ø±Õ¹æ»®Ïß³Ì
+          //å…³é—­è§„åˆ’çº¿ç¨‹
           boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
@@ -950,7 +960,8 @@ namespace move_base {
         }
 
         //check for an oscillation condition
-        //¼ì²éÕğµ´Ìõ¼ş¡£Èç¹û³¤Ê±¼äÃ»ÓĞÕğµ´£¨ÒÆ¶¯£©¾Í·¢²¼0ËÙ¶È£¬²¢ÉèÖÃclearing×´Ì¬
+        //æ£€æŸ¥éœ‡è¡æ¡ä»¶ã€‚å¦‚æœé•¿æ—¶é—´æ²¡æœ‰éœ‡è¡ï¼ˆç§»åŠ¨ï¼‰å°±å‘å¸ƒ0é€Ÿåº¦ï¼Œå¹¶è®¾ç½®clearingçŠ¶æ€
+        //çœ‹æœºå™¨äººæœ‰æ²¡æœ‰ç§»åŠ¨
         if(oscillation_timeout_ > 0.0 &&
             last_oscillation_reset_ + ros::Duration(oscillation_timeout_) < ros::Time::now())
         {
@@ -962,34 +973,34 @@ namespace move_base {
         {
          boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
         
-	//¼ÆËã³öÒ»ÌõÓĞĞ§ËÙ¶È
+	//è®¡ç®—å‡ºä¸€æ¡æœ‰æ•ˆé€Ÿåº¦
         if(tc_->computeVelocityCommands(cmd_vel)){
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                            cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
           //make sure that we send the velocity command to the base
-          //·¢²¼ËÙ¶ÈÃüÁî¸øµ×ÅÌ¿ØÖÆÆ÷
+          //å‘å¸ƒé€Ÿåº¦å‘½ä»¤ç»™åº•ç›˜æ§åˆ¶å™¨
           vel_pub_.publish(cmd_vel);
           if(recovery_trigger_ == CONTROLLING_R)
             recovery_index_ = 0;
         }
-	//Ã»ÓĞ¼ÆËã³öÓĞĞ§ËÙ¶È
+	//æ²¡æœ‰è®¡ç®—å‡ºæœ‰æ•ˆé€Ÿåº¦
         else {
           ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
           ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
 
           //check if we've tried to find a valid control for longer than our time limit
-	  //¼ì²éÎÒÃÇÊÇ·ñ³¬Ê± ¹ıÓĞĞ§¿ØÖÆµÄÊ±¼äÏŞÖÆ
+	  //æ£€æŸ¥æˆ‘ä»¬æ˜¯å¦è¶…æ—¶ è¿‡æœ‰æ•ˆæ§åˆ¶çš„æ—¶é—´é™åˆ¶
           if(ros::Time::now() > attempt_end){
             //we'll move into our obstacle clearing mode
-	    //ÎÒÃÇ»á½øÈëµ½ÕÏ°­ÎïÇåÀíÄ£Ê½
+	    //æˆ‘ä»¬ä¼šè¿›å…¥åˆ°éšœç¢ç‰©æ¸…ç†æ¨¡å¼
             publishZeroVelocity();
             state_ = CLEARING;
             recovery_trigger_ = CONTROLLING_R;
           }
           else{
             //otherwise, if we can't find a valid control, we'll go back to planning
-	    //Èç¹ûÎÒÃÇ²»ÄÜ¼ÆËãÓĞĞ§¿ØÖÆ£¬ÎÒÃÇ»áÖØĞÂ¹æ»®
+	    //å¦‚æœæˆ‘ä»¬ä¸èƒ½è®¡ç®—æœ‰æ•ˆæ§åˆ¶ï¼Œæˆ‘ä»¬ä¼šé‡æ–°è§„åˆ’
             last_valid_plan_ = ros::Time::now();
             planning_retries_ = 0;
             state_ = PLANNING;
@@ -1007,7 +1018,7 @@ namespace move_base {
         break;
 
       //we'll try to clear out space with any user-provided recovery behaviors
-      //ÎÒÃÇ³¢ÊÔÓÃÓÃ»§Ìá¹©µÄ»Ö¸´ĞĞÎªÇå³ı¿Õ¼ä
+      //æˆ‘ä»¬å°è¯•ç”¨ç”¨æˆ·æä¾›çš„æ¢å¤è¡Œä¸ºæ¸…é™¤ç©ºé—´
       case CLEARING:
         ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
         //we'll invoke whatever recovery behavior we're currently on if they're enabled
@@ -1028,10 +1039,10 @@ namespace move_base {
           recovery_index_++;
         }
         else{
-	  //µ±ËùÓĞµÄ»Ö¸´¶¯×÷¶¼Ã»ÓĞÓÃÊ±
+	  //å½“æ‰€æœ‰çš„æ¢å¤åŠ¨ä½œéƒ½æ²¡æœ‰ç”¨æ—¶
           ROS_DEBUG_NAMED("move_base_recovery","All recovery behaviors have failed, locking the planner and disabling it.");
           //disable the planner thread
-	  //¹Ø±Õ¹æ»®Ïß³Ì
+	  //å…³é—­è§„åˆ’çº¿ç¨‹
           boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
           runPlanner_ = false;
           lock.unlock();
