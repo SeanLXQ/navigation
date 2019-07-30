@@ -66,14 +66,15 @@ void SimpleTrajectoryGenerator::initialise(
     bool discretize_by_time) {
   /*
    * We actually generate all velocity sample vectors here, from which to generate trajectories later on
+   *我们在这里产生速度采样vecotors，然后根据这些采样来生产路径
    */
-  double max_vel_th = limits->max_vel_theta;
-  double min_vel_th = -1.0 * max_vel_th;
+  double max_vel_th = limits->max_vel_theta;//最高转速
+  double min_vel_th = -1.0 * max_vel_th;//最低转速
   discretize_by_time_ = discretize_by_time;
-  Eigen::Vector3f acc_lim = limits->getAccLimits();
-  pos_ = pos;
-  vel_ = vel;
-  limits_ = limits;
+  Eigen::Vector3f acc_lim = limits->getAccLimits();//获取acc_lim_x,acc_lim_y,acc_lim_theta
+  pos_ = pos;//当前位置
+  vel_ = vel;//当前速度
+  limits_ = limits;//所有限制条件
   next_sample_index_ = 0;
   sample_params_.clear();
 
@@ -83,8 +84,10 @@ void SimpleTrajectoryGenerator::initialise(
   double max_vel_y = limits->max_vel_y;
 
   // if sampling number is zero in any dimension, we don't generate samples generically
+  //如果所有维度的采样数据都为0，我们不生成任何样本
   if (vsamples[0] * vsamples[1] * vsamples[2] > 0) {
     //compute the feasible velocity space based on the rate at which we run
+    //根据我们运行的频率计算可行的速度
     Eigen::Vector3f max_vel = Eigen::Vector3f::Zero();
     Eigen::Vector3f min_vel = Eigen::Vector3f::Zero();
 
@@ -96,6 +99,7 @@ void SimpleTrajectoryGenerator::initialise(
       max_vel_y = std::max(std::min(max_vel_y, dist / sim_time_), min_vel_y);
 
       // if we use continous acceleration, we can sample the max velocity we can reach in sim_time_
+      //如果我们持续加速，我们能够采样我们在sim_time_达到的最大速度
       max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_time_);
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_time_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_time_);
@@ -105,7 +109,8 @@ void SimpleTrajectoryGenerator::initialise(
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_time_);
     } else {
       // with dwa do not accelerate beyond the first step, we only sample within velocities we reach in sim_period
-      max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
+      //使用dwa时，只在第一步加速，我们只采样我们能够在sim_period能够达到的速度
+	  max_vel[0] = std::min(max_vel_x, vel[0] + acc_lim[0] * sim_period_);
       max_vel[1] = std::min(max_vel_y, vel[1] + acc_lim[1] * sim_period_);
       max_vel[2] = std::min(max_vel_th, vel[2] + acc_lim[2] * sim_period_);
 
@@ -114,6 +119,7 @@ void SimpleTrajectoryGenerator::initialise(
       min_vel[2] = std::max(min_vel_th, vel[2] - acc_lim[2] * sim_period_);
     }
 
+	//将采样数据放进sample_params_中
     Eigen::Vector3f vel_samp = Eigen::Vector3f::Zero();
     VelocityIterator x_it(min_vel[0], max_vel[0], vsamples[0]);
     VelocityIterator y_it(min_vel[1], max_vel[1], vsamples[1]);
