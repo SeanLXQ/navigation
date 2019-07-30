@@ -50,7 +50,7 @@
 #include <nav_core/parameter_magic.h>
 
 //register this planner as a BaseLocalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
+//PLUGINLIB_EXPORT_CLASS(dwa_local_planner::DWAPlannerROS, nav_core::BaseLocalPlanner)
 
 namespace dwa_local_planner {
 
@@ -145,6 +145,7 @@ namespace dwa_local_planner {
       return false;
     }
     //when we get a new plan, we also want to clear any latch we may have on goal tolerances
+    //当我们获得一个新计划，我们同样希望能够清除目标容忍范围的闩锁
     latchedStopRotateController_.resetLatching();
 
     ROS_INFO("Got new plan");
@@ -187,6 +188,7 @@ namespace dwa_local_planner {
 
   bool DWAPlannerROS::dwaComputeVelocityCommands(geometry_msgs::PoseStamped &global_pose, geometry_msgs::Twist& cmd_vel) {
     // dynamic window sampling approach to get useful velocity commands
+    //动态窗口采样 来计算有效速度
     if(! isInitialized()){
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
       return false;
@@ -202,8 +204,9 @@ namespace dwa_local_planner {
     */
 
     //compute what trajectory to drive along
+    //计算跟随哪条轨迹
     geometry_msgs::PoseStamped drive_cmds;
-    drive_cmds.header.frame_id = costmap_ros_->getBaseFrameID();
+    drive_cmds.header.frame_id = costmap_ros_->getBaseFrameID();//获取costmap的局部frame
     
     // call with updated footprint
     base_local_planner::Trajectory path = dp_->findBestPath(global_pose, robot_vel, drive_cmds);
@@ -263,17 +266,19 @@ namespace dwa_local_planner {
 
   bool DWAPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel) {
     // dispatches to either dwa sampling control or stop and rotate control, depending on whether we have been close enough to goal
-    if ( ! costmap_ros_->getRobotPose(current_pose_)) {
+    //分配到dwa采样控制还是停止还是旋转控制，取决于我们是否到达目标点
+    if ( ! costmap_ros_->getRobotPose(current_pose_)) {//是否能够获取机器人当前位置
       ROS_ERROR("Could not get robot pose");
       return false;
     }
     std::vector<geometry_msgs::PoseStamped> transformed_plan;
-    if ( ! planner_util_.getLocalPlan(current_pose_, transformed_plan)) {
+    if ( ! planner_util_.getLocalPlan(current_pose_, transformed_plan)) {//是否能够获取全局路径
       ROS_ERROR("Could not get local plan");
       return false;
     }
 
     //if the global plan passed in is empty... we won't do anything
+    //如果全局规划是空的，我们不做处理
     if(transformed_plan.empty()) {
       ROS_WARN_NAMED("dwa_local_planner", "Received an empty transformed plan.");
       return false;
@@ -281,10 +286,12 @@ namespace dwa_local_planner {
     ROS_DEBUG_NAMED("dwa_local_planner", "Received a transformed plan with %zu points.", transformed_plan.size());
 
     // update plan in dwa_planner even if we just stop and rotate, to allow checkTrajectory
+    //更新dwa规划期的 规划，即使我们停止了或者在旋转， 允许检查轨迹
     dp_->updatePlanAndLocalCosts(current_pose_, transformed_plan, costmap_ros_->getRobotFootprint());
 
     if (latchedStopRotateController_.isPositionReached(&planner_util_, current_pose_)) {
       //publish an empty plan because we've reached our goal position
+      //因为我们已经到达目标点，所以发布一个空计划
       std::vector<geometry_msgs::PoseStamped> local_plan;
       std::vector<geometry_msgs::PoseStamped> transformed_plan;
       publishGlobalPlan(transformed_plan);
@@ -301,8 +308,10 @@ namespace dwa_local_planner {
     } else {
       bool isOk = dwaComputeVelocityCommands(current_pose_, cmd_vel);
       if (isOk) {
+	  	//计算路径成功
         publishGlobalPlan(transformed_plan);
       } else {
+      //dwa计算路径失败
         ROS_WARN_NAMED("dwa_local_planner", "DWA planner failed to produce path.");
         std::vector<geometry_msgs::PoseStamped> empty_plan;
         publishGlobalPlan(empty_plan);
